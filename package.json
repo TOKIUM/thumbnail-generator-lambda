@@ -1,0 +1,73 @@
+{
+  "private": true,
+  "name": "thumbnail-generator-lambda",
+  "license": "AGPL-3.0",
+  "version": "1.0.0",
+  "description": "Lambda functions to generate thumbnails",
+  "engines": {
+    "node": ">= 12.0.0",
+    "npm": ">= 7.0.0"
+  },
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/BearTail/thumbnail-generator-lambda.git"
+  },
+  "scripts": {
+    "lint": "eslint src --ext js,ts",
+    "release": "sls deploy -v",
+    "release:staging": "yarn run release --stage dev",
+    "release:production": "yarn run release --stage prod",
+    "start": "sls invoke local",
+    "start:remote": "sls invoke -d \"$(ts-node -e \"console.log(JSON.stringify(require('./events/sns/object-put.ts').default));\")\"",
+    "start:staging": "yarn start:remote --stage dev",
+    "start:production": "yarn start:remote --stage prod",
+    "test": "TS_NODE_FILES=true NODE_ENV=test THUMBNAIL_DESTINATION_PREFIX=test_thumbnails mocha \"src/**/*.test.ts\"",
+    "test:ci": "TS_NODE_FILES=true NODE_ENV=test THUMBNAIL_DESTINATION_PREFIX=test_thumbnails nyc mocha \"src/**/*.test.ts\" --reporter mocha-junit-reporter --reporter-options mochaFile=test-results.xml",
+    "test:ci:report": "nyc report --reporter=text-lcov > lcov.info",
+    "test:e2e:staging": "TS_NODE_FILES=true NODE_ENV=test STAGE=dev mocha e2e/index.ts",
+    "test:e2e:production": "TS_NODE_FILES=true NODE_ENV=test STAGE=prod mocha e2e/index.ts"
+  },
+  "mocha": {
+    "require": [
+      "ts-node/register",
+      "source-map-support/register",
+      "./setup-test.ts"
+    ]
+  },
+  "nyc": {
+    "extends": "@istanbuljs/nyc-config-typescript",
+    "include": "src/**",
+    "all": true
+  },
+  "dependencies": {
+    "@bugsnag/js": "^7.5.1",
+    "aws-sdk": "^2.799.0",
+    "source-map-support": "^0.5.19",
+    "winston": "^3.2.1"
+  },
+  "devDependencies": {
+    "@istanbuljs/nyc-config-typescript": "^1.0.1",
+    "@types/aws-lambda": "^8.10.64",
+    "@types/mocha": "^8.0.4",
+    "@types/power-assert": "^1.5.3",
+    "@types/sinon": "^9.0.9",
+    "@types/triple-beam": "1.3.1",
+    "@typescript-eslint/eslint-plugin": "^4.8.2",
+    "@typescript-eslint/parser": "^4.8.2",
+    "aws-sdk-mock": "^5.1.0",
+    "eslint": "^7.14.0",
+    "fork-ts-checker-webpack-plugin": "^5.0.14",
+    "mocha": "^8.2.1",
+    "mocha-junit-reporter": "^2.0.0",
+    "nyc": "^15.1.0",
+    "power-assert": "^1.6.1",
+    "serverless": "^2.13.0",
+    "serverless-webpack": "^5.3.5",
+    "sinon": "^9.2.1",
+    "ts-loader": "^8.0.11",
+    "ts-node": "^9.0.0",
+    "typescript": "^4.1.2",
+    "webpack": "^4.44.2",
+    "webpack-bugsnag-plugins": "^1.4.3"
+  }
+}

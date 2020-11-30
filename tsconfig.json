@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "lib": ["es2018"],
+    "moduleResolution": "node",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "outDir": "lib",
+    "removeComments": true,
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2018",
+    "typeRoots": ["./src/@types", "./node_modules/@types"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    ".serverless/**/*",
+    ".webpack/**/*",
+    "_warmup/**/*",
+    ".vscode/**/*"
+  ]
+}

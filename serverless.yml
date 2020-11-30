@@ -1,0 +1,60 @@
+service: ${opt:service, 'thumbnail-generator-lambda'}
+
+plugins:
+  - serverless-webpack
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: ${opt:region, 'ap-northeast-1'}
+  stage: ${opt:stage, 'dev'}
+  memorySize: 1024
+  iamRoleStatements: ${file(config/cf-iam-role-statements.js)}
+
+functions:
+  generate-pdf-preview:
+    handler: src/index.generatePdfPreview
+    description: PDFのプレビュー画像を生成する
+    memorySize: 512
+    timeout: 180
+    layers:
+      - ${file(config/ghostscript-layer.js)}
+      - ${file(config/poppler-layer.js)}
+    # Append SNS events here
+    # events:
+    #   - sns:
+    #       arn: YOUR_PDF_UPLOAD_EVENT_FANOUT_TOPIC_ARN
+    #       redrivePolicy:
+    #         deadLetterTargetRef: GeneratePdfPreviewDLQ
+
+  generate-thumbnails:
+    handler: src/index.generateThumbnails
+    description: 画像のサムネイルを生成する
+    memorySize: 3008
+    timeout: 300
+    layers:
+      - ${file(config/image-magick-layer.js)}
+    # Append SNS events here
+    # events:
+    #   - sns:
+    #       arn: YOUR_PDF_UPLOAD_EVENT_FANOUT_TOPIC_ARN
+    #       redrivePolicy:
+    #         deadLetterTargetRef: GenerateThumbnailsDLQ
+
+# Describe additional resources
+#
+# e.g.
+#   resources:
+#     Resources:
+#       GeneratePdfPreviewDLQ:
+#         Type: AWS::SQS::Queue
+#         Properties:
+#           QueueName: generate-pdf-preview-${self:provider.stage}-dlq
+#       GenerateThumbnailsDLQ:
+#         Type: AWS::SQS::Queue
+#         Properties:
+#           QueueName: generate-thumbnails-${self:provider.stage}-dlq
+
+custom:
+  webpack:
+    packager: 'yarn'

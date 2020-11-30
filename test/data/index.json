@@ -1,0 +1,90 @@
+{
+  "objects": [
+    {
+      "mimetype": "image/gif",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-000000000000.gif",
+      "localpath": "./hello-world.gif",
+      "description": null,
+      "meta": {
+        "width": 1200,
+        "height": 675,
+        "size": 112542
+      }
+    },
+    {
+      "mimetype": "image/jpeg",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-100000000000.jpg",
+      "localpath": "./hello-world.jpg",
+      "description": "EXIF（Rotation）が付いたJPEG",
+      "meta": {
+        "width": 1920,
+        "height": 1080,
+        "size": 81075
+      }
+    },
+    {
+      "mimetype": "image/jpeg",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-100000000001.jpg",
+      "localpath": null,
+      "description": "ピクセル数が多いJPEG",
+      "meta": {
+        "width": 3840,
+        "height": 2160,
+        "size": 14540075
+      }
+    },
+    {
+      "mimetype": "application/pdf",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-500000000000.pdf",
+      "localpath": "./dummy.pdf",
+      "description": null,
+      "meta": {
+        "width": 595,
+        "height": 842,
+        "size": 13264
+      }
+    },
+    {
+      "mimetype": "application/pdf",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-500000000001.pdf",
+      "localpath": null,
+      "description": "容量の大きい（> 25MB）PDF",
+      "meta": {
+        "width": 3840,
+        "height": 2160,
+        "size": 31787490
+      }
+    },
+    {
+      "mimetype": "image/png",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-200000000000.png",
+      "localpath": "./hello-world.png",
+      "description": null,
+      "meta": {
+        "width": 1920,
+        "height": 1080,
+        "size": 30957
+      }
+    },
+    {
+      "mimetype": "image/png",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-200000000001.png",
+      "localpath": null,
+      "description": "容量の大きい（> 25MB）PNG",
+      "meta": {
+        "width": 3840,
+        "height": 2160,
+        "size": 32957987
+      }
+    },
+    {
+      "mimetype": "text/plain",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-100000000000.jpg",
+      "localpath": "./hello-world.txt",
+      "description": "不正なフォーマットのファイル",
+      "meta": {
+        "size": 13
+      }
+    }
+  ]
+}
