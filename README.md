@@ -3,7 +3,7 @@ PDFのプレビュー生成、および画像のサムネイル生成処理を�
 
 ## Requirements
 ローカルで実行する場合は、Ghostscript, ImageMagickをインストールしておくこと.\
-Lambda上では、 ghostscript-aws-lambda-layer, image-magick-aws-lambda-layerを使用するため、それぞれ予めリリースしておく必要がある.
+Lambda上では、 [ghostscript-aws-lambda-layer](https://github.com/BearTail/ghostscript-aws-lambda-layer), [image-magick-aws-lambda-layer](https://github.com/BearTail/image-magick-aws-lambda-layer), [poppler-aws-lambda-layer](https://github.com/BearTail/poppler-aws-lambda-layer)を使用するため、それぞれ予めリリースしておく必要がある.
 
 ## Specification
 S3の特定のprefixに関して、S3 Objectが作成・更新された時に、SNSのトピックにイベントが通知される.\
@@ -91,4 +91,4 @@ yarn release -f generate-pdf-preview
 ## LICENSE
 AGPL 3.0
 
-なお、内部でGhostscript, ImageMagick, Popplerを使用している.
+なお、内部で[Ghostscript](https://www.ghostscript.com/), [ImageMagick](https://imagemagick.org/), [Poppler](https://poppler.freedesktop.org/)を使用している.
