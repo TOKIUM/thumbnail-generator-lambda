@@ -4,7 +4,6 @@ PDFのプレビュー生成、および画像のサムネイル生成処理を�
 ## Requirements
 実行、リリースには[Serverless framework](https://www.serverless.com/)を使用するため、[Credentials](https://www.serverless.com/framework/docs/providers/aws/guide/credentials/)など必要な設定をしておく必要がある.
 
-
 また、以下のソフトウェアを使用するため、それぞれ実行環境にインストールしておくこと.
 - Ghostscript
 - ImageMagick
