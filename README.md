@@ -2,8 +2,18 @@
 PDFのプレビュー生成、および画像のサムネイル生成処理を行うLambda Function
 
 ## Requirements
-ローカルで実行する場合は、Ghostscript, ImageMagickをインストールしておくこと.\
-Lambda上では、 [ghostscript-aws-lambda-layer](https://github.com/BearTail/ghostscript-aws-lambda-layer), [image-magick-aws-lambda-layer](https://github.com/BearTail/image-magick-aws-lambda-layer), [poppler-aws-lambda-layer](https://github.com/BearTail/poppler-aws-lambda-layer)を使用するため、それぞれ予めリリースしておく必要がある.
+実行、リリースには[Serverless framework](https://www.serverless.com/)を使用するため、[Credentials](https://www.serverless.com/framework/docs/providers/aws/guide/credentials/)など必要な設定をしておく必要がある.
+
+
+また、以下のソフトウェアを使用するため、それぞれ実行環境にインストールしておくこと.
+- Ghostscript
+- ImageMagick
+- poppler
+
+Lambda上では、以下のLayerを使用するため、これらも予めリリースしておく必要がある.
+- [ghostscript-aws-lambda-layer](https://github.com/BearTail/ghostscript-aws-lambda-layer)
+- [image-magick-aws-lambda-layer](https://github.com/BearTail/image-magick-aws-lambda-layer)
+- [poppler-aws-lambda-layer](https://github.com/BearTail/poppler-aws-lambda-layer)
 
 ## Specification
 S3の特定のprefixに関して、S3 Objectが作成・更新された時に、SNSのトピックにイベントが通知される.\
@@ -23,24 +33,27 @@ PDFのプレビューをGhostscriptを使って生成する.
 
 1. アップロードされたファイルをダウンロード
   - PDFファイルの場合は処理を終了
-2. 1のファイルから、EXIF等のメタデータを除去した画像ファイルでを作成する
+2. 1のファイルから、EXIF等のメタデータを除去した画像ファイルを作成する
   - JPEG, PNGの場合はJPEG、GIFの場合はGIFを、縮尺を維持したまま作成する
   - 長辺は最大で3840px以下にする
 3. 2で作成されたファイルをアップロードする
-4. 2で作成されたファイルを元に、サムネイル画像を作成する（画像のサイズは、長辺が128のもの、短辺が512のものの2種類）
+4. 2で作成されたファイルを元に、サムネイル画像を作成する（画像のサイズは、長辺が128pxのもの、短辺が512pxのものの2種類）
   - JPEG, PNG: 5MBに収まるように変換
   - GIF: 背景色を白にして、容量を最適化したGIFを生成
 5. 4で生成されたファイルを順次アップロードする
 
 ## Usage
 ### Command
-
 ```sh
 # ローカル実行
 yarn start
 
 # リモート実行
 env S3_BUCKET=test S3_OBJECT_KEY=key.jpg yarn start:remote -f generate-thumbnails
+
+# serverlessコマンドのオプションを使用可能
+# 詳細はドキュメントを参照（https://www.serverless.com/framework/docs/）
+env S3_BUCKET=test S3_OBJECT_KEY=key.jpg yarn start:remote -f generate-thumbnails --stage prod --region us-east-1
 
 # テスト
 yarn run test
@@ -52,10 +65,15 @@ S3_BUCKET=your-bucket S3_OBJECT_PREFIX=prefix yarn test:e2e:staging
 ## Release
 ```sh
 # サービス全体のリリース
+# デフォルトで ap-northeast-1 にリリースされる
 yarn release
 
 # Lambda Functionのコード修正のみのリリース
 yarn release -f generate-pdf-preview
+
+# serverlessコマンドのオプションを使用可能
+# 詳細はドキュメントを参照（https://www.serverless.com/framework/docs/）
+yarn release --stage prod --region us-east-1
 ```
 
 ### Configuration
