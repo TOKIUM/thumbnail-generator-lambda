@@ -35,7 +35,7 @@ module.exports = async (serverless) => {
   const version = serverless.variables.options.imageMagickLayerVersion;
   const localVersion = await getLocalPopplerVersion();
   const layerConfig = { region, name: POPPLER_LAYER_NAME, version };
-  const layerVersion = await fetchLayerVersion('Ghostscript', localVersion, getVersionFromDescription, layerConfig);
+  const layerVersion = await fetchLayerVersion('Poppler', localVersion, getVersionFromDescription, layerConfig);
 
   return {
     'Fn::Join': [
