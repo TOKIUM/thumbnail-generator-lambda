@@ -53,15 +53,29 @@ class FileSystem {
       logger.verbose(`Executing command (${command})`);
       const process = exec(`${command}`);
 
+      let error = '';
+
       process.stdout?.on('data', (data) => { logger.debug(data); });
-      process.stderr?.on('data', (data) => { logger.error(data); });
+      process.stderr?.on('data', (data) => {
+        error += data;
+        // 結果的に重複して出力される可能性があるが、念の為ログ出力
+        // （確実にreject時のメッセージに含まれるのであれば削除可）
+        logger.error(data);
+      });
 
       process.on('exit', (code, signal) => {
         if (code === 0) {
           logger.info(`Command finished successfully (${command})`);
           resolve();
         } else {
-          reject(new ApplicationError(ErrorCode.CommandError, `command exited with code ${code} (signal=${signal}, command=${command})`));
+          const exitMsg = `command exited with code ${code} (signal=${signal}, command=${command})`;
+          // NOTE: 明示的に `exit` していないので、stderrの出力は完了しているはずだが不明
+          if (error) {
+            logger.error(exitMsg);
+            reject(new ApplicationError(ErrorCode.CommandError, error));
+          } else {
+            reject(new ApplicationError(ErrorCode.CommandError, exitMsg));
+          }
         }
       });
     });
