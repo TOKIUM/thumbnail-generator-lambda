@@ -11,13 +11,18 @@ class LambdaConsole extends winston.transports.Console {
   log(info: winston.LogEntry, callback: Function): void { // eslint-disable-line @typescript-eslint/ban-types
     setImmediate(() => { this.emit('logged', info); });
 
-    if (this.stderrLevels[info[LEVEL]]) {
-      console.error(info[MESSAGE]);
-    } else if (this.consoleWarnLevels[info[LEVEL]]) {
-      console.warn(info[MESSAGE]);
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+
+    // TypeScriptの制約により、正しく型付けできないので、anyを使う. TS4.4で修正予定
+    // https://github.com/microsoft/TypeScript/issues/1863
+    if (this.stderrLevels[info[LEVEL as any]]) {
+      console.error(info[MESSAGE as any]);
+    } else if (this.consoleWarnLevels[info[LEVEL as any]]) {
+      console.warn(info[MESSAGE as any]);
     } else {
-      console.log(info[MESSAGE]);
+      console.log(info[MESSAGE as any]);
     }
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     if (callback) { callback(); }
   }

@@ -17,9 +17,9 @@ const enableBugsnag = !slsw.lib.webpack.isLocal && !!bugsnagApiKey;
 
 module.exports = {
   context: __dirname,
-  mode: slsw.lib.webpack.isLocal ? 'development' : 'production',
+  mode: stage === 'prod' ? 'production' : 'development',
   entry: slsw.lib.entries,
-  devtool: slsw.lib.webpack.isLocal ? 'cheap-module-eval-source-map' : 'source-map',
+  devtool: slsw.lib.webpack.isLocal ? 'eval-cheap-module-source-map' : 'source-map',
   resolve: {
     extensions: ['.js', '.mjs', '.json', '.ts'],
     symlinks: false,

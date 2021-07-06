@@ -1,12 +1,5 @@
-function normalizeBucket(bucket) {
-  if (bucket instanceof Array) {
-    return bucket;
-  }
-  return [bucket];
-}
-
-module.exports = (serverless) => {
-  const buckets = normalizeBucket(serverless.variables.options.bucket);
+module.exports = () => {
+  const buckets = (process.env.S3_BUCKET_LIST || '').split(',').map((x) => x.trim());
 
   return buckets.map((bucket) => {
     return {

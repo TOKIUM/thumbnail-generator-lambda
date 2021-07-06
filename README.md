@@ -81,11 +81,11 @@ yarn release --stage prod --region us-east-1
     SNSのトピックの設定の他に、Lambda Functionの権限設定のためにオプションで指定する必要がある.
 
     ```sh
-    # Serverlessコマンドのオプションで指定する
-    yarn release --bucket test
+    # 環境変数で指定する
+    S3_BUCKET_LIST=test yarn release
 
     # 複数のバケットを使う場合
-    yarn release --bucket test1 --bucket test2
+    S3_BUCKET_LIST=test1,test2 yarn release
     ```
 
 1. サムネイルのアップロード先
@@ -101,8 +101,8 @@ yarn release --stage prod --region us-east-1
     serverless.ymlのserviceで指定する名称を変更できる.
 
     ```sh
-    # Serverlessコマンドのオプションで指定する
-    yarn release --service your-service-name
+    # 環境変数で指定する
+    SLS_SERVICE=your-service-name yarn release
     ```
 
 ## LICENSE

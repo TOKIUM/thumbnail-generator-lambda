@@ -16,7 +16,9 @@ interface S3Object {
 const etag = '"786212dc8256aedbd739c125a6b08c79"';
 const versionId = 'mPkivcujEory9MQhVn6qaWLUVdPU5Gz7';
 
-function buildS3MethodMock<T>(method: string, f: (params: T, callback: Function) => void): sinon.SinonSpy<[T, Function]> {
+type S3Callback = (error: Response | null, response: Response | null) => void;
+
+function buildS3MethodMock<T>(method: string, f: (params: T, callback: S3Callback) => void): sinon.SinonSpy<[T, S3Callback]> {
   const stub = spy(f);
 
   AWSMock.mock('S3', method, stub);
@@ -68,8 +70,8 @@ function buildNoSuchKeyError(): Response {
   return buildS3Error('NoSuchKey', 404, 'The specified key does not exist.');
 }
 
-export function stubGetObject(existingObjects: Array<S3Object>): sinon.SinonSpy<[AWS.S3.GetObjectRequest, Function]> {
-  return buildS3MethodMock('getObject', (params: AWS.S3.GetObjectRequest, callback: Function) => {
+export function stubGetObject(existingObjects: Array<S3Object>): sinon.SinonSpy<[AWS.S3.GetObjectRequest, S3Callback]> {
+  return buildS3MethodMock('getObject', (params: AWS.S3.GetObjectRequest, callback: S3Callback) => {
     const s3Object = existingObjects.find((x) => x.key === params.Key);
 
     if (s3Object) {
@@ -80,8 +82,8 @@ export function stubGetObject(existingObjects: Array<S3Object>): sinon.SinonSpy<
   });
 }
 
-export function stubPutObject(allowedKeys: Array<string>): sinon.SinonSpy<[AWS.S3.PutObjectRequest, Function]> {
-  return buildS3MethodMock('putObject', (params: AWS.S3.PutObjectRequest, callback: Function) => {
+export function stubPutObject(allowedKeys: Array<string>): sinon.SinonSpy<[AWS.S3.PutObjectRequest, S3Callback]> {
+  return buildS3MethodMock('putObject', (params: AWS.S3.PutObjectRequest, callback: S3Callback) => {
     const isAllowed = allowedKeys.find((x) => x === params.Key) ? true : false;
 
     if (!isAllowed) {

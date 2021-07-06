@@ -27,9 +27,9 @@ function getVersionFromDescription(description) {
   return matched ? matched[1] : null;
 }
 
-module.exports = async (serverless) => {
-  const region = serverless.variables.options.region || 'ap-northeast-1';
-  const version = serverless.variables.options.imageMagickLayerVersion;
+module.exports = async ({ resolveVariable }) => {
+  const region = await resolveVariable('self:provider.region, "ap-northeast-1"');
+  const version = process.env.GHOSTSCRIPT_LAYER_VERSION;
   const localVersion = await getLocalGhostscriptVersion();
   const layerConfig = { region, name: GHOSTSCRIPT_LAYER_NAME, version };
   const layerVersion = await fetchLayerVersion('Ghostscript', localVersion, getVersionFromDescription, layerConfig);
