@@ -94,6 +94,4 @@ export function applyBugsnag<T, U>(handler: DKLambdaHandler<T, U>, config?: Part
     }
   };
 }
-
-
 export default logger;
