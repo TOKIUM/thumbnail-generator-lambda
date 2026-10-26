@@ -1,7 +1,7 @@
 module.exports = () => {
   const buckets = (process.env.S3_BUCKET_LIST || '').split(',').map((x) => x.trim());
 
-  return buckets.map((bucket) => {
+  const s3Statements = buckets.map((bucket) => {
     return {
       Effect: 'Allow',
       Action: [
@@ -19,4 +19,19 @@ module.exports = () => {
       },
     };
   });
+
+  return [
+    ...s3Statements,
+    {
+      // Lambda Destinations(onFailure)でDLQへ送信するための権限
+      Effect: 'Allow',
+      Action: [
+        'sqs:SendMessage',
+      ],
+      Resource: [
+        { 'Fn::GetAtt': ['GeneratePdfPreviewDLQ', 'Arn'] },
+        { 'Fn::GetAtt': ['GenerateReceiptThumbnailsDLQ', 'Arn'] },
+      ],
+    },
+  ];
 };

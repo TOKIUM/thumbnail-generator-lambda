@@ -29,7 +29,11 @@ describe('ImageService', () => {
         throw new Error('Expected error not occurred');
       } catch (e) {
         if (!(e instanceof ApplicationError)) {
-          assert.fail(e.message);
+          if (e instanceof Error) {
+            assert.fail(e.message);
+          } else {
+            assert.fail(String(e));
+          }
         }
 
         assert.equal(e.code, 'CommandError');
@@ -129,7 +133,7 @@ describe('ImageService', () => {
     }
 
     context('when convert command is not installed', () => {
-      let execStub: sinon.SinonStub;
+      let execStub: ReturnType<typeof mockCommand>;
 
       beforeEach(() => {
         execStub = mockCommand(/^convert /i, (process) => {
@@ -165,7 +169,11 @@ describe('ImageService', () => {
         throw new Error('Expected error not occurred');
       } catch (e) {
         if (!(e instanceof ApplicationError)) {
-          assert.fail(e.message);
+          if (e instanceof Error) {
+            assert.fail(e.message);
+          } else {
+            assert.fail(String(e));
+          }
         }
 
         assert.equal(e.code, 'CommandError');
@@ -190,7 +198,7 @@ describe('ImageService', () => {
     }
 
     context('when convert command is not installed', () => {
-      let execStub: sinon.SinonStub;
+      let execStub: ReturnType<typeof mockCommand>;
 
       beforeEach(() => {
         execStub = mockCommand(/^convert /i, (process) => {
@@ -273,7 +281,11 @@ describe('ImageService', () => {
         throw new Error('Expected error not occurred');
       } catch (e) {
         if (!(e instanceof ApplicationError)) {
-          assert.fail(e.message);
+          if (e instanceof Error) {
+            assert.fail(e.message);
+          } else {
+            assert.fail(String(e));
+          }
         }
 
         assert.equal(e.code, 'CommandError');
@@ -292,7 +304,7 @@ describe('ImageService', () => {
     });
 
     context('when identify command is not installed', () => {
-      let execStub: sinon.SinonStub;
+      let execStub: ReturnType<typeof mockCommand>;
 
       beforeEach(() => {
         execStub = mockCommand(/^identify /i, (process) => {

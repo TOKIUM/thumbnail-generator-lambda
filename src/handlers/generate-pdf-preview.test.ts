@@ -1,12 +1,15 @@
 import * as fs from 'fs';
 import assert from 'power-assert';
 import * as AWSLambda from 'aws-lambda';
-import * as AWSMock from 'aws-sdk-mock';
+import { S3Client } from '@aws-sdk/client-s3';
+import { mockClient } from 'aws-sdk-client-mock';
+import * as sinon from 'sinon';
 
 import { handleEvent } from './generate-pdf-preview';
 import { stubGetObject, stubPutObject } from '../../test/s3-mock';
 import ApplicationError from '../application-error';
 import PreviewService from '../services/preview-service';
+import fileSystem from '../file-system';
 
 import { findS3Object } from '../../test/resources';
 import { generateSnsEvent } from '../../events/sns';
@@ -14,9 +17,8 @@ import { generateSnsEventOfS3ObjectPut } from '../../events/sns/object-put';
 
 const jpeg = findS3Object('jpeg', { local: true });
 const pdf = findS3Object('pdf', { local: true });
+let s3Mock = mockClient(S3Client);
 
-// TODO: 一時ファイルの削除のテストを追加
-// NOTE: 一時ファイルの削除処理をstub化すると一部のテストが失敗する（ファイルが削除されていないと失敗するテストがある）
 describe('generatePdfPreview', () => {
   async function testApplicationError(event: AWSLambda.SNSEvent, code: string): Promise<void> {
     try {
@@ -25,7 +27,11 @@ describe('generatePdfPreview', () => {
       throw new Error('Expected error not occurred');
     } catch (e) {
       if (!(e instanceof ApplicationError)) {
-        assert.fail(e.message);
+        if (e instanceof Error) {
+          assert.fail(e.message);
+        } else {
+          assert.fail(String(e));
+        }
       }
 
       assert.equal(e.code, code);
@@ -66,12 +72,10 @@ describe('generatePdfPreview', () => {
     const event = generateSnsEventOfS3ObjectPut(topicName, bucketName, jpeg.key, void 0, jpeg.size);
 
     beforeEach(() => {
-      stubGetObject([]);
+      s3Mock = stubGetObject([]);
     });
 
-    afterEach(() => {
-      AWSMock.restore('S3');
-    });
+    afterEach(() => { s3Mock.reset(); });
 
     it('throws ApplicationError', async () => { await testApplicationError(event, 'FailedToGetS3Object'); });
   });
@@ -87,12 +91,10 @@ describe('generatePdfPreview', () => {
     };
 
     beforeEach(() => {
-      stubGetObject([s3Object]);
+      s3Mock = stubGetObject([s3Object]);
     });
 
-    afterEach(() => {
-      AWSMock.restore('S3');
-    });
+    afterEach(() => { s3Mock.reset(); });
 
     it('throws ApplicationError', async () => { await testApplicationError(event, 'S3ObjectBodyEmpty'); });
   });
@@ -112,12 +114,10 @@ describe('generatePdfPreview', () => {
       };
 
       beforeEach(() => {
-        stubGetObject([s3Object]);
+        s3Mock = stubGetObject([s3Object]);
       });
 
-      afterEach(() => {
-        AWSMock.restore('S3');
-      });
+      afterEach(() => { s3Mock.reset(); });
 
       it ('returns null', async () => {
         const response = await handleEvent(event);
@@ -138,12 +138,10 @@ describe('generatePdfPreview', () => {
       };
 
       beforeEach(() => {
-        stubGetObject([s3Object]);
+        s3Mock = stubGetObject([s3Object]);
       });
 
-      afterEach(() => {
-        AWSMock.restore('S3');
-      });
+      afterEach(() => { s3Mock.reset(); });
 
       it ('returns null', async () => {
         const response = await handleEvent(event);
@@ -168,13 +166,11 @@ describe('generatePdfPreview', () => {
       };
 
       beforeEach(() => {
-        stubGetObject([s3Object]);
-        stubPutObject([]);
+        s3Mock = stubGetObject([s3Object]);
+        s3Mock = stubPutObject([], s3Mock);
       });
 
-      afterEach(() => {
-        AWSMock.restore('S3');
-      });
+      afterEach(() => { s3Mock.reset(); });
 
       it('throws ApplicationError', async () => { await testApplicationError(event, 'FailedToPutS3Object'); });
     });
@@ -192,18 +188,61 @@ describe('generatePdfPreview', () => {
       const previewKey = PreviewService.getPdfPreviewKey(key);
 
       beforeEach(() => {
-        stubGetObject([s3Object]);
-        stubPutObject([previewKey]);
+        s3Mock = stubGetObject([s3Object]);
+        s3Mock = stubPutObject([previewKey], s3Mock);
       });
 
-      afterEach(() => {
-        AWSMock.restore('S3');
-      });
+      afterEach(() => { s3Mock.reset(); });
 
       it('returns the preview object url', async () => {
         const response = await handleEvent(event);
 
         assert.equal(response, `s3://${bucketName}/${previewKey}`);
+      });
+    });
+  });
+
+  context('一時ファイルのクリーンアップ', () => {
+    let clearSpy: sinon.SinonSpy;
+    const contentType = 'application/pdf';
+    const key = `${keyPrefix}/${dirId}/${fileId}.pdf`;
+    const event = generateSnsEventOfS3ObjectPut(topicName, bucketName, key);
+    const previewKey = PreviewService.getPdfPreviewKey(key);
+
+    beforeEach(() => {
+      clearSpy = sinon.spy(fileSystem, 'clear');
+    });
+
+    afterEach(() => {
+      clearSpy.restore();
+      s3Mock.reset();
+    });
+
+    context('PDFファイルが正常にアップロードされる場合', () => {
+      beforeEach(() => {
+        const body = fs.readFileSync(pdf.local as string);
+        s3Mock = stubGetObject([{ key, body, contentType, contentLength: pdf.size }]);
+        s3Mock = stubPutObject([previewKey], s3Mock);
+      });
+
+      it('fileSystem.clear が1回呼ばれる', async () => {
+        await handleEvent(event);
+
+        assert(clearSpy.calledOnce);
+      });
+    });
+
+    context('アップロード中にエラーが発生した場合', () => {
+      beforeEach(() => {
+        const body = fs.readFileSync(pdf.local as string);
+        s3Mock = stubGetObject([{ key, body, contentType, contentLength: pdf.size }]);
+        s3Mock = stubPutObject([], s3Mock);
+      });
+
+      it('エラー発生時も fileSystem.clear が1回呼ばれる', async () => {
+        await testApplicationError(event, 'FailedToPutS3Object');
+
+        assert(clearSpy.calledOnce);
       });
     });
   });

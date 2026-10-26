@@ -59,9 +59,9 @@ module.exports = {
       'process.env.BUGSNAG_API_KEY': JSON.stringify(bugsnagApiKey),
       'process.env.APP_VERSION': JSON.stringify(appVersion),
     }),
-    new ForkTsCheckerWebpackPlugin({
-      eslint: { files: ['src/**/*.ts', 'test/**/*.ts'], options: { cache: true } },
-    }),
+    // fork-ts-checker-webpack-plugin v7 以降は ESLint 連携が廃止されたため、型チェックのみを担当する。
+    // ESLint は CI の `yarn lint` で別途実行している。
+    new ForkTsCheckerWebpackPlugin(),
   ].concat(
     enableBugsnag ? [
       new BugsnagBuildReporterPlugin({

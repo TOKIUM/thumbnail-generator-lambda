@@ -1,11 +1,14 @@
 import * as fs from 'fs';
 import assert from 'power-assert';
 import * as AWSLambda from 'aws-lambda';
-import * as AWSMock from 'aws-sdk-mock';
+import { S3Client } from '@aws-sdk/client-s3';
+import { mockClient } from 'aws-sdk-client-mock';
+import * as sinon from 'sinon';
 
 import { handleEvent } from './generate-thumbnails';
 import { stubGetObject, stubPutObject } from '../../test/s3-mock';
 import ApplicationError from '../application-error';
+import fileSystem from '../file-system';
 
 import { findS3Object } from '../../test/resources';
 import { generateSnsEvent } from '../../events/sns';
@@ -13,9 +16,8 @@ import { generateSnsEventOfS3ObjectPut } from '../../events/sns/object-put';
 
 const jpeg = findS3Object('jpeg', { local: true });
 const pdf = findS3Object('pdf', { local: true });
+let s3Mock = mockClient(S3Client);
 
-// TODO: 一時ファイルの削除のテストを追加
-// NOTE: 一時ファイルの削除処理をstub化すると一部のテストが失敗する（ファイルが削除されていないと失敗するテストがある）
 describe('generateThumbnails', function() {
   this.timeout(5000);
 
@@ -26,7 +28,11 @@ describe('generateThumbnails', function() {
       throw new Error('Expected error not occurred');
     } catch (e) {
       if (!(e instanceof ApplicationError)) {
-        assert.fail(e.message);
+        if (e instanceof Error) {
+          assert.fail(e.message);
+        } else {
+          assert.fail(String(e));
+        }
       }
 
       assert.equal(e.code, code);
@@ -67,12 +73,10 @@ describe('generateThumbnails', function() {
     const event = generateSnsEventOfS3ObjectPut(topicName, bucketName, jpeg.key);
 
     beforeEach(() => {
-      stubGetObject([]);
+      s3Mock = stubGetObject([]);
     });
 
-    afterEach(() => {
-      AWSMock.restore('S3');
-    });
+    afterEach(() => { s3Mock.reset(); });
 
     it('throws ApplicationError', async () => { await testApplicationError(event, 'FailedToGetS3Object'); });
   });
@@ -92,12 +96,10 @@ describe('generateThumbnails', function() {
       };
 
       beforeEach(() => {
-        stubGetObject([s3Object]);
+        s3Mock = stubGetObject([s3Object]);
       });
 
-      afterEach(() => {
-        AWSMock.restore('S3');
-      });
+      afterEach(() => { s3Mock.reset(); });
 
       it ('returns null', async () => {
         const response = await handleEvent(event);
@@ -118,12 +120,10 @@ describe('generateThumbnails', function() {
       };
 
       beforeEach(() => {
-        stubGetObject([s3Object]);
+        s3Mock = stubGetObject([s3Object]);
       });
 
-      afterEach(() => {
-        AWSMock.restore('S3');
-      });
+      afterEach(() => { s3Mock.reset(); });
 
       it ('returns null', async () => {
         const response = await handleEvent(event);
@@ -148,13 +148,11 @@ describe('generateThumbnails', function() {
       };
 
       beforeEach(() => {
-        stubGetObject([s3Object]);
-        stubPutObject([]);
+        s3Mock = stubGetObject([s3Object]);
+        s3Mock = stubPutObject([], s3Mock);
       });
 
-      afterEach(() => {
-        AWSMock.restore('S3');
-      });
+      afterEach(() => { s3Mock.reset(); });
 
       it('throws ApplicationError', async () => { await testApplicationError(event, 'FailedToPutS3Object'); });
     });
@@ -174,13 +172,11 @@ describe('generateThumbnails', function() {
       ];
 
       beforeEach(() => {
-        stubGetObject([s3Object]);
-        stubPutObject(previewKeys);
+        s3Mock = stubGetObject([s3Object]);
+        s3Mock = stubPutObject(previewKeys, s3Mock);
       });
 
-      afterEach(() => {
-        AWSMock.restore('S3');
-      });
+      afterEach(() => { s3Mock.reset(); });
 
       it("returns the preview objects' urls", async () => {
         const response = await handleEvent(event);
@@ -188,6 +184,55 @@ describe('generateThumbnails', function() {
         assert.equal(response && response[0], `s3://${bucketName}/${previewKeys[0]}`);
         assert.equal(response && response[128], `s3://${bucketName}/${previewKeys[1]}`);
         assert.equal(response && response[512], `s3://${bucketName}/${previewKeys[2]}`);
+      });
+    });
+  });
+
+  context('一時ファイルのクリーンアップ', () => {
+    let clearSpy: sinon.SinonSpy;
+    const key = `${keyPrefix}/${dirId}/${fileId}.jpg`;
+    const contentType = 'image/jpeg';
+    const event = generateSnsEventOfS3ObjectPut(topicName, bucketName, key);
+    const previewKeys = [
+      `test_thumbnails/${dirId}/${fileId}.jpg`,
+      `test_thumbnails/${dirId}/${fileId}-128.jpg`,
+      `test_thumbnails/${dirId}/${fileId}-512.jpg`,
+    ];
+
+    beforeEach(() => {
+      clearSpy = sinon.spy(fileSystem, 'clear');
+    });
+
+    afterEach(() => {
+      clearSpy.restore();
+      s3Mock.reset();
+    });
+
+    context('JPEGファイルが正常にアップロードされる場合', () => {
+      beforeEach(() => {
+        const body = fs.readFileSync(jpeg.local as string);
+        s3Mock = stubGetObject([{ key, body, contentType, contentLength: jpeg.size }]);
+        s3Mock = stubPutObject(previewKeys, s3Mock);
+      });
+
+      it('fileSystem.clear が1回呼ばれる', async () => {
+        await handleEvent(event);
+
+        assert(clearSpy.calledOnce);
+      });
+    });
+
+    context('アップロード中にエラーが発生した場合', () => {
+      beforeEach(() => {
+        const body = fs.readFileSync(jpeg.local as string);
+        s3Mock = stubGetObject([{ key, body, contentType, contentLength: jpeg.size }]);
+        s3Mock = stubPutObject([], s3Mock);
+      });
+
+      it('エラー発生時も fileSystem.clear が1回呼ばれる', async () => {
+        await testApplicationError(event, 'FailedToPutS3Object');
+
+        assert(clearSpy.calledOnce);
       });
     });
   });

@@ -1,4 +1,8 @@
+import * as fs from 'fs';
+
+import ApplicationError from '../application-error';
 import CommandService from './command-service';
+import ErrorCode from '../error-code';
 import fileSystem from '../file-system';
 import logger from '../logger';
 
@@ -30,7 +34,17 @@ export default class PdfService {
 
     command += ` -o ${jpegPath} ${pdfPath}`;
 
-    return fileSystem.writeBy(command, [jpegPath]);
+    await fileSystem.writeBy(command, [jpegPath]);
+
+    // gs は、閲覧パスワード付きのPDF（10系）や、空・壊れたPDFで、何も出力せずに exit 0 で終わることがある
+    const outputSize = await fs.promises.stat(jpegPath).then((stats) => stats.size, () => 0);
+
+    if (outputSize === 0) {
+      throw new ApplicationError(
+        ErrorCode.CommandError,
+        `gs exited with code 0 but the output is missing or empty (path=${jpegPath}). The PDF may be encrypted, empty or broken (command=${command})`,
+      );
+    }
   }
 
   static async getPreviewSize(pdfPath: string, dpi: number): Promise<PageSize | null> {

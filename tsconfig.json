@@ -10,7 +10,8 @@
     "sourceMap": true,
     "strict": true,
     "target": "es2018",
-    "typeRoots": ["./src/@types", "./node_modules/@types"]
+    "typeRoots": ["./src/@types", "./node_modules/@types"],
+    "skipLibCheck": true
   },
   "include": ["src/**/*.ts"],
   "exclude": [

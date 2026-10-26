@@ -28,7 +28,7 @@ export async function handleEvent(event: AWSLambda.SNSEvent): Promise<string | n
 
   try {
     s3Event = JSON.parse(message);
-  } catch (error) {
+  } catch {
     throw new ApplicationError(ErrorCode.InvalidParameter, message);
   }
 
@@ -52,17 +52,28 @@ export async function handleEvent(event: AWSLambda.SNSEvent): Promise<string | n
 
     return `s3://${previewObject.bucket.name}/${previewObject.key}`;
   } catch (e) {
-    logError(e);
+    let errorMessage;
 
-    const error = e instanceof ApplicationError ? e: new ApplicationError(ErrorCode.InternalServerError, e.message);
+    if (e instanceof Error) {
+      logError(e);
+      errorMessage = e.message;
+    } else {
+      errorMessage = String(e);
+      logger.error(errorMessage);
+    }
 
+    const error = e instanceof ApplicationError ? e : new ApplicationError(ErrorCode.InternalServerError, errorMessage);
     throw error;
   } finally {
     try {
       await fileSystem.clear();
     } catch (e) {
       // 本来の処理は完了しているので、エラーは握りつぶす
-      logError(e);
+      if (e instanceof Error) {
+        logError(e);
+      } else {
+        logger.error(String(e));
+      }
     }
   }
 }

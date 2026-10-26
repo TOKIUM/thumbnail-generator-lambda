@@ -85,6 +85,174 @@
       "meta": {
         "size": 13
       }
+    },
+    {
+      "mimetype": "image/jpeg",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-1000000000a1.jpg",
+      "localpath": "./lowres-72dpi.jpg",
+      "description": "解像度が低い(72DPI,640x427)JPEG",
+      "meta": {
+        "width": 640,
+        "height": 427,
+        "size": 45852
+      }
+    },
+    {
+      "mimetype": "image/jpeg",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-1000000000a2.jpg",
+      "localpath": "./tiny.jpg",
+      "description": "容量が極小(約5KB,263x216)のJPEG",
+      "meta": {
+        "width": 263,
+        "height": 216,
+        "size": 4997
+      }
+    },
+    {
+      "mimetype": "image/jpeg",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-1000000000a3.jpg",
+      "localpath": "./smartphone-portrait.jpg",
+      "description": "スマホ撮影・EXIF回転ありJPEG(Android縦)",
+      "meta": {
+        "width": 4000,
+        "height": 2250,
+        "size": 1940815
+      }
+    },
+    {
+      "mimetype": "image/png",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-2000000000a1.png",
+      "localpath": "./greyscale.png",
+      "description": "グレースケールPNG(1700x2400)",
+      "meta": {
+        "width": 1700,
+        "height": 2400,
+        "size": 24808
+      }
+    },
+    {
+      "mimetype": "image/png",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-2000000000a2.png",
+      "localpath": "./lowres-72dpi.png",
+      "description": "解像度が低い(72DPI)PNG",
+      "meta": {
+        "width": 640,
+        "height": 533,
+        "size": 79339
+      }
+    },
+    {
+      "mimetype": "application/pdf",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-5000000000a1.pdf",
+      "localpath": "./encrypted.pdf",
+      "description": "パスワード保護されたPDF(pass12345678)",
+      "meta": {
+        "size": 418399
+      }
+    },
+    {
+      "mimetype": "application/pdf",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-5000000000a2.pdf",
+      "localpath": "./multipage-2p.pdf",
+      "description": "2ページのPDF",
+      "meta": {
+        "size": 195044
+      }
+    },
+    {
+      "mimetype": "image/jpeg",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-1000000000b1.jpg",
+      "localpath": "./res-ok.jpg",
+      "description": "解像度OK境界(1700x2400)JPEG[QA解像度検証用]",
+      "meta": {
+        "width": 1700,
+        "height": 2400,
+        "size": 65591
+      }
+    },
+    {
+      "mimetype": "image/png",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-2000000000b1.png",
+      "localpath": "./res-ok.png",
+      "description": "解像度OK境界(1700x2400)PNG[QA解像度検証用]",
+      "meta": {
+        "width": 1700,
+        "height": 2400,
+        "size": 47134
+      }
+    },
+    {
+      "mimetype": "image/jpeg",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-1000000000b2.jpg",
+      "localpath": "./res-ng-boundary.jpg",
+      "description": "解像度NG境界(1654x2338)JPEG[QA解像度検証用]",
+      "meta": {
+        "width": 1654,
+        "height": 2338,
+        "size": 62720
+      }
+    },
+    {
+      "mimetype": "image/png",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-2000000000b2.png",
+      "localpath": "./res-ng-boundary.png",
+      "description": "解像度NG境界(1654x2338)PNG[QA解像度検証用]",
+      "meta": {
+        "width": 1654,
+        "height": 2338,
+        "size": 46395
+      }
+    },
+    {
+      "mimetype": "image/jpeg",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-1000000000b3.jpg",
+      "localpath": "./greyscale.jpg",
+      "description": "グレースケールJPEG(1700x2400)",
+      "meta": {
+        "width": 1700,
+        "height": 2400,
+        "size": 33140
+      }
+    },
+    {
+      "mimetype": "application/pdf",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-5000000000b1.pdf",
+      "localpath": "./lowres-72dpi.pdf",
+      "description": "低解像度(72DPI)PDF",
+      "meta": {
+        "size": 147141
+      }
+    },
+    {
+      "mimetype": "image/png",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-2000000000b3.png",
+      "localpath": "./bilevel-2tone.png",
+      "description": "2階調(bilevel)・低解像度PNG",
+      "meta": {
+        "width": 800,
+        "height": 500,
+        "size": 42868
+      }
+    },
+    {
+      "mimetype": "image/jpeg",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-1000000000b4.jpg",
+      "localpath": "./smartphone-landscape.jpg",
+      "description": "スマホ撮影・EXIF回転あり(Android横)JPEG",
+      "meta": {
+        "width": 4000,
+        "height": 2250,
+        "size": 2389293
+      }
+    },
+    {
+      "mimetype": "application/pdf",
+      "key": "00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-5000000000b2.pdf",
+      "localpath": "./landscape-2p.pdf",
+      "description": "横向き2ページPDF(請求書)",
+      "meta": {
+        "size": 465976
+      }
     }
   ]
 }

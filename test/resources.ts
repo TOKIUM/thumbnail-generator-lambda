@@ -34,7 +34,7 @@ export interface FindOption {
 }
 
 const dataRoot = path.join(__dirname, 'data');
-const fileJson: FileJson = require(path.join(dataRoot, 'index.json')); // eslint-disable-line @typescript-eslint/no-var-requires
+const fileJson: FileJson = require(path.join(dataRoot, 'index.json')); // eslint-disable-line @typescript-eslint/no-require-imports
 
 function typeToMimeType(type: ContentType): string {
   switch (type) {

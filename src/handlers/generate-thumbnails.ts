@@ -22,7 +22,7 @@ export async function handleEvent(event: AWSLambda.SNSEvent): Promise<PreviewRes
 
   try {
     s3Event = JSON.parse(message);
-  } catch (error) {
+  } catch {
     throw new ApplicationError(ErrorCode.InvalidParameter, message);
   }
 

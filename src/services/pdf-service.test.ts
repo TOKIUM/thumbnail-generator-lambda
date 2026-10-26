@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import assert from 'power-assert';
 import * as sinon from 'sinon';
 
@@ -10,6 +11,7 @@ import { findS3Object } from '../../test/resources';
 
 const jpeg = findS3Object('jpeg', { local: true });
 const pdf = findS3Object('pdf', { local: true });
+const encryptedPdf = findS3Object('pdf', { local: true, filter: (o) => (o.description || '').includes('パスワード保護') });
 
 describe('PdfService', () => {
   describe('.convert', () => {
@@ -27,7 +29,11 @@ describe('PdfService', () => {
         throw new Error('Expected error not occurred');
       } catch (e) {
         if (!(e instanceof ApplicationError)) {
-          assert.fail(e.message);
+          if (e instanceof Error) {
+            assert.fail(e.message);
+          } else {
+            assert.fail(String(e));
+          }
         }
 
         assert.equal(e.code, 'CommandError');
@@ -50,6 +56,44 @@ describe('PdfService', () => {
       });
 
       it('throws CommandError', async () => { await testCommandError(pdf.local as string); });
+    });
+
+    context('when gs exits with code 0 without creating the output', () => {
+      let execStub: sinon.SinonStub;
+
+      beforeEach(() => {
+        execStub = mockCommand(/^gs /i, (process) => {
+          process.emit('exit', 0, null);
+        });
+      });
+
+      afterEach(() => {
+        execStub?.restore();
+      });
+
+      it('throws CommandError', async () => { await testCommandError(pdf.local as string); });
+    });
+
+    context('when gs exits with code 0 and creates an empty output', () => {
+      let execStub: sinon.SinonStub;
+
+      beforeEach(() => {
+        execStub = mockCommand(/^gs /i, (process) => {
+          fs.writeFileSync(jpegPath, '');
+          process.emit('exit', 0, null);
+        });
+      });
+
+      afterEach(() => {
+        execStub?.restore();
+      });
+
+      it('throws CommandError', async () => { await testCommandError(pdf.local as string); });
+    });
+
+    context('when the PDF is encrypted', () => {
+      // gs 9.54.0 は exit 1 で終わるが、10系は exit 0 で何も出力しない
+      it('throws CommandError', async () => { await testCommandError(encryptedPdf.local as string); });
     });
 
     context('when pdfinfo command is not installed', () => {
@@ -157,7 +201,11 @@ describe('PdfService', () => {
           throw new Error('Expected error not occurred');
         } catch (e) {
           if (!(e instanceof ApplicationError)) {
-            assert.fail(e.message);
+            if (e instanceof Error) {
+              assert.fail(e.message);
+            } else {
+              assert.fail(String(e));
+            }
           }
 
           assert.equal(e.code, 'CommandError');

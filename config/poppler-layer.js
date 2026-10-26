@@ -1,4 +1,5 @@
 const fetchLayerVersion = require('./layer-version');
+const resolveLayerVersion = require('./layer-versions');
 
 const POPPLER_LAYER_NAME = 'poppler-aws-lambda-layer';
 
@@ -32,7 +33,8 @@ function getVersionFromDescription(description) {
 
 module.exports = async ({ resolveVariable }) => {
   const region = await resolveVariable('self:provider.region, "ap-northeast-1"');
-  const version = process.env.POPPLER_LAYER_VERSION;
+  const stage = await resolveVariable('sls:stage');
+  const version = resolveLayerVersion('poppler', stage, 'POPPLER_LAYER_VERSION');
   const localVersion = await getLocalPopplerVersion();
   const layerConfig = { region, name: POPPLER_LAYER_NAME, version };
   const layerVersion = await fetchLayerVersion('Poppler', localVersion, getVersionFromDescription, layerConfig);

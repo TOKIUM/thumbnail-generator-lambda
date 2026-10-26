@@ -1,5 +1,6 @@
 import assert from 'power-assert';
-import * as AWSMock from 'aws-sdk-mock';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { mockClient } from 'aws-sdk-client-mock';
 import * as sinon from 'sinon';
 
 import S3Bucket from '../aws/s3/bucket';
@@ -19,6 +20,7 @@ const gif = findS3Object('gif', { local: true });
 const jpeg = findS3Object('jpeg', { local: true });
 const pdf = findS3Object('pdf', { local: true });
 const png = findS3Object('png', { local: true });
+let s3Mock = mockClient(S3Client);
 
 interface SinonStub<T extends (...args: any[]) => any> extends sinon.SinonStub<Parameters<T>, ReturnType<T>>{ // eslint-disable-line @typescript-eslint/no-explicit-any
   // @types/sinon で未定義なのでパッチ
@@ -29,8 +31,8 @@ describe('PreviewService', () => {
   const dirId = '993c7f8e-555a-4f6e-ad63-03607cd085ad';
   const fileId = '3106f1f2-0572-4fca-b4f2-bd4b58547e9f';
 
-  function buildS3Object(key: string, localPath: string, contentType: string): S3Object {
-    const s3Bucket = new S3Bucket('test-bucket');
+  function buildS3Object(key: string, localPath: string, contentType: string, s3Client: (S3Client | null) = null): S3Object {
+    const s3Bucket = new S3Bucket('test-bucket', s3Client);
 
     return new S3Object(s3Bucket, key, localPath, contentType);
   }
@@ -39,8 +41,8 @@ describe('PreviewService', () => {
     const localPath = pdf.local as string;
     const contentType = 'application/pdf';
 
-    async function assertApplicationError(key: string, code: string, message?: string): Promise<void> {
-      const s3Object = buildS3Object(key, localPath, contentType);
+    async function assertApplicationError(key: string, code: string, message?: string, s3: (S3Client | null) = null): Promise<void> {
+      const s3Object = buildS3Object(key, localPath, contentType, s3);
 
       try {
         await PreviewService.createPdfPreview(s3Object);
@@ -48,7 +50,11 @@ describe('PreviewService', () => {
         throw new Error('Expected error not occurred');
       } catch (e) {
         if (!(e instanceof ApplicationError)) {
-          assert.fail(e.message);
+          if (e instanceof Error) {
+            assert.fail(e.message);
+          } else {
+            assert.fail(String(e));
+          }
         }
 
         assert.equal(e.code, code);
@@ -78,7 +84,7 @@ describe('PreviewService', () => {
     });
 
     context('when failed to output the preview', () => {
-      // 入力ファイルのサイズが0のときなどに発生. コマンド自体は成功する
+      // 入力ファイルのサイズが0のときや、閲覧パスワード付きのPDF（gs 10系）のときなどに発生. コマンド自体は成功する
       const key = `test_prefix/${dirId}/${fileId}.pdf`;
       const previewKey = PreviewService.getPdfPreviewKey(key);
       let execStub: sinon.SinonStub;
@@ -87,29 +93,32 @@ describe('PreviewService', () => {
         execStub = mockCommand(/^gs /i, (process) => {
           process.emit('exit', 0, null);
         });
-        stubPutObject([previewKey]);
+        s3Mock = stubPutObject([previewKey]);
       });
 
       afterEach(() => {
         execStub?.restore();
-        AWSMock.restore('S3');
+        s3Mock.reset();
       });
 
-      it('throws an Error', async () => { await assertApplicationError(key, 'FailedToPutS3Object'); });
+      it('throws CommandError without uploading the preview', async () => {
+        await assertApplicationError(key, 'CommandError', '', s3Mock as unknown as S3Client);
+        assert.equal(s3Mock.commandCalls(PutObjectCommand).length, 0);
+      });
     });
 
     context('when failed to upload the preview', () => {
       const key = `test_prefix/${dirId}/${fileId}.pdf`;
 
       beforeEach(() => {
-        stubPutObject([]);
+        s3Mock = stubPutObject([]);
       });
 
       afterEach(() => {
-        AWSMock.restore('S3');
+        s3Mock.reset();
       });
 
-      it('throws ApplicationError', async () => { await assertApplicationError(key, 'FailedToPutS3Object'); });
+      it('throws ApplicationError', async () => { await assertApplicationError(key, 'FailedToPutS3Object', '', s3Mock as unknown as S3Client); });
     });
 
     context('when uploaded the preview successfully', () => {
@@ -118,15 +127,15 @@ describe('PreviewService', () => {
         const previewKey = `${prefix}/${dirId}/${fileId}${previewExtension}`;
 
         beforeEach(() => {
-          stubPutObject([previewKey]);
+          s3Mock = stubPutObject([previewKey]);
         });
 
         afterEach(() => {
-          AWSMock.restore('S3');
+          s3Mock.reset();
         });
 
         it(`returns the preview object, whose extension is ${previewExtension}`, async () => {
-          const s3Object = buildS3Object(pdfKey, localPath, contentType);
+          const s3Object = buildS3Object(pdfKey, localPath, contentType, s3Mock as unknown as S3Client);
           const previewObject = await PreviewService.createPdfPreview(s3Object);
 
           assert.equal(previewObject.key, previewKey);
@@ -187,8 +196,8 @@ describe('PreviewService', () => {
       const key = `test_prefix/${dirId}/${fileId}${normalExt}`;
       const thumbnailExt = contentType === 'image/gif' ? '.gif' : '.jpg';
 
-      async function assertApplicationError(key: string, code: string, message?: string): Promise<void> {
-        const s3Object = buildS3Object(key, localPath, contentType);
+      async function assertApplicationError(key: string, code: string, message?: string, s3: (S3Client | null) = null): Promise<void> {
+        const s3Object = buildS3Object(key, localPath, contentType, s3);
 
         try {
           await PreviewService.createThumbnails(s3Object);
@@ -196,7 +205,11 @@ describe('PreviewService', () => {
           throw new Error('Expected error not occurred');
         } catch (e) {
           if (!(e instanceof ApplicationError)) {
-            assert.fail(e.message);
+            if (e instanceof Error) {
+              assert.fail(e.message);
+            } else {
+              assert.fail(String(e));
+            }
           }
 
           assert.equal(e.code, code);
@@ -230,28 +243,28 @@ describe('PreviewService', () => {
           execStub = mockCommand(/^convert /i, (process) => {
             process.emit('exit', 0, null);
           });
-          stubPutObject(getPreviewKeys(dirId, fileId, thumbnailExt, [0, 128, 512]));
+          s3Mock = stubPutObject(getPreviewKeys(dirId, fileId, thumbnailExt, [0, 128, 512]));
         });
 
         afterEach(() => {
           execStub?.restore();
-          AWSMock.restore('S3');
+          s3Mock.reset();
         });
 
-        it('throws an Error', async () => { await assertApplicationError(key, 'FailedToPutS3Object'); });
+        it('throws an Error', async () => { await assertApplicationError(key, 'FailedToPutS3Object', '', s3Mock as unknown as S3Client); });
       });
 
       context('when failed to upload the base image', () => {
         beforeEach(() => {
-          stubPutObject([]);
+          s3Mock = stubPutObject([]);
         });
 
         afterEach(() => {
-          AWSMock.restore('S3');
+          s3Mock.reset();
         });
 
         it('throws ApplicationError', async () => {
-          const s3Object = buildS3Object(key, localPath, contentType);
+          const s3Object = buildS3Object(key, localPath, contentType, s3Mock as unknown as S3Client);
 
           try {
             await PreviewService.createThumbnails(s3Object);
@@ -259,7 +272,11 @@ describe('PreviewService', () => {
             throw new Error('Expected error not occurred');
           } catch (e) {
             if (!(e instanceof ApplicationError)) {
-              assert.fail(e.message);
+              if (e instanceof Error) {
+                assert.fail(e.message);
+              } else {
+                assert.fail(String(e));
+              }
             }
 
             assert.equal(e.code, 'FailedToPutS3Object');
@@ -275,16 +292,16 @@ describe('PreviewService', () => {
           // 一部だけ失敗するようにする
           resizeStub = stubResize(contentType, resizeError, [512]);
 
-          stubPutObject(getPreviewKeys(dirId, fileId, thumbnailExt, [0, 128, 512]));
+          s3Mock = stubPutObject(getPreviewKeys(dirId, fileId, thumbnailExt, [0, 128, 512]));
         });
 
         afterEach(() => {
           resizeStub?.restore();
-          AWSMock.restore('S3');
+          s3Mock.reset();
         });
 
         it('throws an Error', async () => {
-          const s3Object = buildS3Object(key, localPath, contentType);
+          const s3Object = buildS3Object(key, localPath, contentType, s3Mock as unknown as S3Client);
 
           try {
             await PreviewService.createThumbnails(s3Object);
@@ -292,7 +309,11 @@ describe('PreviewService', () => {
             throw new Error('Expected error not occurred');
           } catch (e) {
             if (!(e instanceof ApplicationError)) {
-              assert.fail(e.message);
+              if (e instanceof Error) {
+                assert.fail(e.message);
+              } else {
+                assert.fail(String(e));
+              }
             }
 
             assert.equal(e.code, resizeError.code);
@@ -304,15 +325,15 @@ describe('PreviewService', () => {
       context('when failed to upload some thumbnails', () => {
         beforeEach(() => {
           // 512だけ失敗する
-          stubPutObject(getPreviewKeys(dirId, fileId, thumbnailExt, [0, 128]));
+          s3Mock = stubPutObject(getPreviewKeys(dirId, fileId, thumbnailExt, [0, 128]));
         });
 
         afterEach(() => {
-          AWSMock.restore('S3');
+          s3Mock.reset();
         });
 
         it('throws ApplicationError', async () => {
-          const s3Object = buildS3Object(key, localPath, contentType);
+          const s3Object = buildS3Object(key, localPath, contentType, s3Mock as unknown as S3Client);
 
           try {
             await PreviewService.createThumbnails(s3Object);
@@ -320,7 +341,11 @@ describe('PreviewService', () => {
             throw new Error('Expected error not occurred');
           } catch (e) {
             if (!(e instanceof ApplicationError)) {
-              assert.fail(e.message);
+              if (e instanceof Error) {
+                assert.fail(e.message);
+              } else {
+                assert.fail(String(e));
+              }
             }
 
             assert.equal(e.code, 'FailedToPutS3Object');
@@ -335,15 +360,15 @@ describe('PreviewService', () => {
           const previewKeys = getPreviewKeys(dirId, baseName, thumbnailExt, previewSizes);
 
           beforeEach(() => {
-            stubPutObject(previewKeys);
+            s3Mock = stubPutObject(previewKeys);
           });
 
           afterEach(() => {
-            AWSMock.restore('S3');
+            s3Mock.reset();
           });
 
           it(`returns thumbnail objects`, async () => {
-            const s3Object = buildS3Object(inputKey, localPath, contentType);
+            const s3Object = buildS3Object(inputKey, localPath, contentType, s3Mock as unknown as S3Client);
             const previewObjects = await PreviewService.createThumbnails(s3Object);
 
             previewObjects.forEach(([size, previewObject], idx) => {

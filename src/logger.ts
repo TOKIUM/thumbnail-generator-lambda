@@ -8,7 +8,7 @@ import { LEVEL, MESSAGE } from 'triple-beam';
 class LambdaConsole extends winston.transports.Console {
   public consoleWarnLevels: string[] = []; // 実際は、constructorで初期化されている
 
-  log(info: winston.LogEntry, callback: Function): void { // eslint-disable-line @typescript-eslint/ban-types
+  log(info: winston.LogEntry, callback: () => void): void {
     setImmediate(() => { this.emit('logged', info); });
 
     /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -44,7 +44,7 @@ logger.on('error', () => {
   // 何もしない
 });
 
-type BugsnagMetadata = { [key: string]: object };  // eslint-disable-line @typescript-eslint/ban-types
+type BugsnagMetadata = { [key: string]: object };
 type MetadataBuilder<T> = (event: T, context?: AWSLambda.Context) => BugsnagMetadata;
 type DKLambdaHandler<T, U> = (event: T, context?: AWSLambda.Context, callback?: AWSLambda.Callback<U>) => Promise<U>;
 
@@ -53,7 +53,7 @@ export function applyBugsnag<T, U>(handler: DKLambdaHandler<T, U>, config?: Part
     apiKey: process.env.BUGSNAG_API_KEY || '0123456789abcdef0123456789abcdef',
     releaseStage: process.env.NODE_ENV || 'development',
     appVersion: process.env.APP_VERSION,
-    ...(config || {}),
+    ...config,
   });
 
   return async (event, context, callback) => {
@@ -80,10 +80,16 @@ export function applyBugsnag<T, U>(handler: DKLambdaHandler<T, U>, config?: Part
           return;
         }
 
-        Bugsnag.notify(e, void 0, (err) => {
-          logger.error(err);
+        if (e instanceof Error) {
+          Bugsnag.notify(e, void 0, (err) => {
+            logger.error(err);
+            resolve();
+          });
+        } else {
+          // 予期しない型の場合は適切に処理
+          logger.error("An unknown error occurred", e);
           resolve();
-        });
+        }
       });
 
       throw e;

@@ -1,8 +1,8 @@
-import * as AWS from 'aws-sdk';
+import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
+import { AwsStub, mockClient } from 'aws-sdk-client-mock';
 
-import * as AWSMock from 'aws-sdk-mock';
-import sinon, { spy } from 'sinon';
+let s3Mock = mockClient(S3Client);
 
 type Response = { [key: string]: any }; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -16,14 +16,8 @@ interface S3Object {
 const etag = '"786212dc8256aedbd739c125a6b08c79"';
 const versionId = 'mPkivcujEory9MQhVn6qaWLUVdPU5Gz7';
 
-type S3Callback = (error: Response | null, response: Response | null) => void;
-
-function buildS3MethodMock<T>(method: string, f: (params: T, callback: S3Callback) => void): sinon.SinonSpy<[T, S3Callback]> {
-  const stub = spy(f);
-
-  AWSMock.mock('S3', method, stub);
-
-  return stub;
+function buildS3MethodMock(command: any, handler: (input: any) => Promise<any>) { // eslint-disable-line @typescript-eslint/no-explicit-any
+  return s3Mock.on(command).callsFake(handler);
 }
 
 function buildGetObjectResponse(s3Object: S3Object): Response {
@@ -70,34 +64,48 @@ function buildNoSuchKeyError(): Response {
   return buildS3Error('NoSuchKey', 404, 'The specified key does not exist.');
 }
 
-export function stubGetObject(existingObjects: Array<S3Object>): sinon.SinonSpy<[AWS.S3.GetObjectRequest, S3Callback]> {
-  return buildS3MethodMock('getObject', (params: AWS.S3.GetObjectRequest, callback: S3Callback) => {
-    const s3Object = existingObjects.find((x) => x.key === params.Key);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function stubGetObject(existingObjects: Array<S3Object>, mock : (AwsStub<any, any, unknown> | null) = null) : AwsStub<any, any, unknown> {
+  if (mock) {
+    s3Mock = mock;
+  }
+
+  buildS3MethodMock(GetObjectCommand, async (input: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    const s3Object = existingObjects.find((x) => x.key === input.Key);
 
     if (s3Object) {
-      callback(null, buildGetObjectResponse(s3Object));
+      return Promise.resolve(buildGetObjectResponse(s3Object));
     } else {
-      callback(buildNoSuchKeyError(), null);
+      return Promise.reject(buildNoSuchKeyError());
     }
   });
+
+  return s3Mock;
 }
 
-export function stubPutObject(allowedKeys: Array<string>): sinon.SinonSpy<[AWS.S3.PutObjectRequest, S3Callback]> {
-  return buildS3MethodMock('putObject', (params: AWS.S3.PutObjectRequest, callback: S3Callback) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function stubPutObject(allowedKeys: Array<string>, mock : (AwsStub<any, any, unknown> | null) = null) : AwsStub<any, any, unknown> {
+  if (mock) {
+    s3Mock = mock;
+  }
+
+  buildS3MethodMock(PutObjectCommand, async (params: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
     const isAllowed = allowedKeys.find((x) => x === params.Key) ? true : false;
 
     if (!isAllowed) {
-      callback(buildAccessDeniedError(), null);
-      return;
+      return Promise.reject(buildAccessDeniedError());
     }
 
     if (params.Body instanceof Readable) {
-      // streamの読み込みがエラーになる時に、成功時の処理が呼ばれないように
-      params.Body.on('ready', () => {
-        callback(null, buildPutObjectResponse());
+      return new Promise((resolve) => {
+        params.Body.on('ready', () => {
+          resolve(buildPutObjectResponse());
+        });
       });
     } else {
-      callback(null, buildPutObjectResponse());
+      return Promise.resolve(buildPutObjectResponse());
     }
   });
+
+  return s3Mock;
 }

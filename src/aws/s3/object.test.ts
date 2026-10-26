@@ -1,13 +1,14 @@
 import * as fs from 'fs';
 import { Readable } from 'stream';
 import assert from 'power-assert';
-import * as AWSMock from 'aws-sdk-mock';
 
 import ApplicationError from '../../application-error';
 import S3Bucket from './bucket';
 import S3Object from './object';
 import fileSystem from '../../file-system';
 import { stubGetObject } from '../../../test/s3-mock';
+import { S3Client } from '@aws-sdk/client-s3';
+import { mockClient } from 'aws-sdk-client-mock';
 
 import { findS3Object } from '../../../test/resources';
 
@@ -15,6 +16,8 @@ const gif = findS3Object('gif', { local: true });
 const jpeg = findS3Object('jpeg', { local: true });
 const pdf = findS3Object('pdf', { local: true });
 const png = findS3Object('png', { local: true });
+
+let s3Mock = mockClient(S3Client);
 
 describe('S3Object', () => {
   const dirId = 'c1498906-fc00-41ad-a3a7-a38cb615a6db';
@@ -32,7 +35,11 @@ describe('S3Object', () => {
         throw new Error('Expected error not occurred');
       } catch (e) {
         if (!(e instanceof ApplicationError)) {
-          assert.fail(e.message);
+          if (e instanceof Error) {
+            assert.fail(e.message);
+          } else {
+            assert.fail(String(e));
+          }
         }
 
         assert.equal(e.code, code);
@@ -44,12 +51,10 @@ describe('S3Object', () => {
       const s3Object = { key, contentType, body };
 
       beforeEach(() => {
-        stubGetObject([s3Object]);
+        s3Mock = stubGetObject([s3Object]);
       });
 
-      afterEach(() => {
-        AWSMock.restore('S3');
-      });
+      afterEach(() => { s3Mock.reset(); });
 
       it('returns a S3Object', async () => {
         const s3Object = await S3Object.buildFromKey(bucketName, key);
@@ -73,12 +78,10 @@ describe('S3Object', () => {
       const key = `test_prefix/${dirId}/${fileId}.pdf`;
 
       beforeEach(() => {
-        stubGetObject([]);
+        s3Mock = stubGetObject([]);
       });
 
-      afterEach(() => {
-        AWSMock.restore('S3');
-      });
+      afterEach(() => { s3Mock.reset(); });
 
       it('throws ApplicationError', async () => { await assertApplicationError(key, 'FailedToGetS3Object'); });
     });
@@ -89,12 +92,10 @@ describe('S3Object', () => {
       const s3Object = { key, contentType, body: void 0 };
 
       beforeEach(() => {
-        stubGetObject([s3Object]);
+        s3Mock = stubGetObject([s3Object]);
       });
 
-      afterEach(() => {
-        AWSMock.restore('S3');
-      });
+      afterEach(() => { s3Mock.reset(); });
 
       it('throws ApplicationError', async () => { await assertApplicationError(key, 'S3ObjectBodyEmpty'); });
     });

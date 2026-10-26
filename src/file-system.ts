@@ -81,7 +81,7 @@ class FileSystem {
     });
   }
 
-  createReadStream(path: string, options?: string | { encoding?: Encoding }): fs.ReadStream {
+  createReadStream(path: string, options?: { encoding?: Encoding }): fs.ReadStream {
     if (!this.files.includes(path)) {
       logger.error(`Reading an invalid file (path=${path}, valid paths=${this.files.join(',')})`);
       throw new ApplicationError(ErrorCode.IOError, `File path invalid (path=${path})`);
@@ -90,7 +90,7 @@ class FileSystem {
     return fs.createReadStream(path, options);
   }
 
-  createWriteStream(path: string, options?: string | { encoding?: Encoding }): fs.WriteStream {
+  createWriteStream(path: string, options?: { encoding?: Encoding }): fs.WriteStream {
     const stream = fs.createWriteStream(path, options);
     stream.on('pipe', () => { this.pushFiles([path]) });
     stream.on('open', () => { this.pushFiles([path]) });

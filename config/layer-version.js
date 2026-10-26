@@ -1,17 +1,27 @@
-const AWS = require('aws-sdk');
+const { GetLayerVersionCommand, LambdaClient, ListLayerVersionsCommand } = require('@aws-sdk/client-lambda');
 
 function fetchLayerVersion(region, layerName, versionNumber) {
-  const lambda = new AWS.Lambda({ apiVersion: '2015-03-31', region });
+  const lambda = new LambdaClient({ apiVersion: '2015-03-31', region });
 
   if (versionNumber) {
     console.debug(`Fetching the specified version: region=${region}, layer=${layerName}, version=${versionNumber}`);
 
-    return lambda.getLayerVersion({ LayerName: layerName, VersionNumber: versionNumber }).promise();
+    const command = new GetLayerVersionCommand({ LayerName: layerName, VersionNumber: Number(versionNumber) });
+    return lambda.send(command)
+      .catch((error) => {
+        // 存在しないバージョンは、呼び出し元で分かりやすいエラーにする
+        if (error.name === 'ResourceNotFoundException') {
+          return null;
+        }
+
+        throw error;
+      });
   }
 
   console.debug(`Fetching the latest version: region=${region}, layer=${layerName}`);
 
-  return lambda.listLayerVersions({ LayerName: layerName }).promise()
+  const command = new ListLayerVersionsCommand({ LayerName: layerName });
+  return lambda.send(command)
     .then((data) => {
       return (data.LayerVersions && data.LayerVersions[0]) || null;
     });
@@ -24,7 +34,7 @@ function fetchLayerVersion(region, layerName, versionNumber) {
  * @param {object} layerConfig
  * @param {string} layerConfig.region
  * @param {string} layerConfig.name
- * @param {number} layerConfig.version
+ * @param {number} [layerConfig.version] - 指定しなければ最新のバージョンを使う
  * @returns {AWS.Lambda.LayerVersionsListItem}
  */
 module.exports = async function (toolName, localVersion, getVersionFromDescription, layerConfig = {}) {
