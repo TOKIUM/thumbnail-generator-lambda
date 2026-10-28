@@ -1,4 +1,6 @@
 service: ${env:SLS_SERVICE, 'thumbnail-generator-lambda'}
+# npm の serverless は本体を取ってくるインストーラーで、版を書かないと最新の本体が動く。package.json の serverless と同じ版に固定する
+frameworkVersion: '4.45.0'
 
 build:
   esbuild: false

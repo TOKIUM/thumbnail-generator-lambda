@@ -15,13 +15,14 @@ const DEFAULT_LAYER_VERSIONS = {
   poppler: 6, // Poppler 21.06.1
 };
 
+// ghostscript 5 = Ghostscript 10.08.0, poppler 7 = Poppler 26.10.0
 const STAGE_LAYER_VERSIONS = {
-  dev: { ghostscript: 4, poppler: 6 }, // staging
-  'dev-tk': { ghostscript: 4, poppler: 6 },
-  'dev-ti': { ghostscript: 4, poppler: 6 },
-  'dev-td': { ghostscript: 4, poppler: 6 },
-  'dev-etc': { ghostscript: 4, poppler: 6 },
-  prod: { ghostscript: 4, poppler: 6 },
+  dev: { ghostscript: 5, poppler: 7 }, // staging
+  'dev-tk': { ghostscript: 5, poppler: 7 },
+  'dev-ti': { ghostscript: 5, poppler: 7 },
+  'dev-td': { ghostscript: 5, poppler: 7 },
+  'dev-etc': { ghostscript: 5, poppler: 7 },
+  prod: { ghostscript: 5, poppler: 7 },
 };
 
 function parseVersion(value, source) {
